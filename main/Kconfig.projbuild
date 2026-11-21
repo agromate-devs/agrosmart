@@ -1,0 +1,229 @@
+menu "Agrosmart configuration"
+    menu "DHT Configuration"
+        choice DHT_CHIP_TYPE
+            prompt "Select chip type"
+            default DHT_CHIP_TYPE_AM2301
+
+            config DHT_CHIP_TYPE_DHT11
+                bool "DHT11"
+            config DHT_CHIP_TYPE_AM2301
+                bool "DHT21/DHT22/AM2301/AM2302/AM2321"
+            config DHT_CHIP_TYPE_SI7021
+                bool "Itead Si7021"
+        endchoice
+
+        config DHT_GPIO
+            int "DHT data GPIO number"
+            default 17 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
+            default 28 if IDF_TARGET_ESP32C5
+            help
+                GPIO number connected to DATA pin
+
+    endmenu
+
+    menu "Humidifier configuration"
+config HUMIDIFIER_GPIO
+    int "Humidifier control GPIO number"
+    default 16 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
+    default 10 if IDF_TARGET_ESP32C5
+    help
+	GPIO number connected to humidifier control pin
+
+config HUMIDIFIER_GPIO_INVERTED
+    bool "Invert humidifier GPIO logic (active low)"
+    default n
+    help
+	Enable if the humidifier is driven by an active-low module(for example relay board), which closes when the control pin is LOW.
+	When enabled, the GPIO is set LOW to turn the humidifier on and HIGH to turn it off.
+
+config HUMIDITY_THRESHOLD_RANGE
+    int "Humidity threshold range (percentage)"
+    default 10
+    help
+	Humidity threshold range in percentage. The humidifier will be turned on when the humidity is below the lower threshold (current humidity - threshold range) and turned off when the humidity is above the upper threshold (current humidity + threshold range).
+
+config HUMIDIFIER_CHECK_INTERVAL_MS
+    int "Humidifier check interval (milliseconds)"
+    default 30000
+    help
+	Interval in milliseconds between checking the humidity and controlling the humidifier. Default is 30000 ms (30 seconds).
+endmenu
+
+menu "Water pump/tank configuration"
+config WATER_PUMP_FLOW_RATE
+    int "Water pump flow rate (ml/min)"
+    default 1400
+    help
+	Flow rate of the water pump in milliliters per minute. Default is 1400 ml/min (1.4 L/min).
+	This value is used to calculate the pump activation duration based on the configured water quantity.
+config WATER_PUMP_GPIO
+    int "Water pump control GPIO number"
+    default 13 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
+    default 23 if IDF_TARGET_ESP32C5
+    help
+	GPIO number connected to water pump control pin
+
+config WATER_PUMP_GPIO_INVERTED
+    bool "Invert water pump GPIO logic (active low)"
+    default n
+    help
+	Enable if the water pump is driven by an active-low module(for example relay), which closes when the control pin is LOW.
+	When enabled, the GPIO is set LOW to turn the pump on and HIGH to turn it off.
+
+config WATER_LEVEL_SENSOR_GPIO
+    int "Water level sensor GPIO number"
+    default 14 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
+    default 6 if IDF_TARGET_ESP32C5
+    help
+	GPIO number connected to the output pin of the XKC-Y23A-NPN capacitive water level sensor. The sensor should be placed at the reserve level of the water tank.
+endmenu
+
+config METRIC_PUBLISH_INTERVAL
+int "Metric publish interval (seconds)"
+default 360
+help
+    Interval in seconds between publishing sensor readings to MQTT. Default is 360 seconds (6 minutes).
+
+config ENABLE_STATUS_LED
+bool "Enable status RGB LED support"
+default y
+
+config STATUS_LED_GPIO
+int "GPIO of RGB Status LED"
+default 48 if IDF_TARGET_ESP32S3
+default 27 if IDF_TARGET_ESP32C5
+depends on ENABLE_STATUS_LED
+help
+    Select the GPIO pin connected to the onboard RGB status LED (e.g., WS2812, SK6805).
+    The pin must support the RMT peripheral for proper LED control.
+
+menu "Soil moisture probe configuration"
+choice SOIL_MOISTURE_PROBE_TYPE
+    prompt "Select probe type"
+    default SOIL_MOISTURE_CAPACITIVE_PROBE
+
+    config SOIL_MOISTURE_CAPACITIVE_PROBE
+	bool "Capacitive"
+    config SOIL_MOISTURE_RESISTIVE_PROBE
+	bool "Resistive"
+endchoice
+
+config SOIL_MOISTURE_GPIO
+    int "Soil moisture probe GPIO number"
+    default 8 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
+    default 3 if IDF_TARGET_ESP32C5
+    help
+	GPIO number connected to soil moisture probe
+
+config SOIL_MOISTURE_POWER_GPIO
+    int "Soil moisture probe power GPIO number"
+    depends on SOIL_MOISTURE_RESISTIVE_PROBE
+    default 19 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
+    default 15 if IDF_TARGET_ESP32C5
+    help
+	GPIO number connected to soil moisture probe power pin. This pin will be set to HIGH to power the probe when taking a reading and set to LOW when not in use in order to reduce the risk of corrosion.
+
+config SOIL_MOISTURE_CHECK_INTERVAL_MS
+    int "Soil moisture check interval (milliseconds)"
+    default 900000
+    help
+	Interval in milliseconds between checking the soil moisture and controlling the water pump. Default is 900000 ms (15 minutes).
+endmenu
+
+menu "LED strip configuration"
+choice LED_STRIP_CHIP_TYPE
+    prompt "Select chip type"
+    default LED_STRIP_TYPE_W2812
+
+    config LED_STRIP_TYPE_W2812
+	bool "W2812"
+    config LED_STRIP_TYPE_W2811
+	bool "W2811"
+    config LED_STRIP_TYPE_W2816
+	bool "W2816"
+    config LED_STRIP_TYPE_SK6812
+	bool "SK6812"
+endchoice
+
+config LED_STRIP_GPIO
+    int "LED strip control GPIO number"
+    default 21 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
+    default 5 if IDF_TARGET_ESP32C5
+    help
+	GPIO number connected to LED strip control pin. The LED strip must be of W281x or SK6812 type
+
+config LED_STRIP_LED_COUNT
+    int "Number of LEDs in the strip"
+    default 30
+    help
+	Number of LEDs in the LED strip.
+endmenu
+
+menu "NTP Server"
+config NTP_SERVER
+    string "NTP server"
+    default "pool.ntp.org"
+    help
+	NTP server to use for time synchronization. Default is "pool.ntp.org".
+
+config NTP_TIMEOUT
+    int "NTP timeout for each request (seconds)"
+    default 5
+    help
+	Timeout in seconds for NTP server response. Default is 5 seconds.
+
+config NTP_RETRY_COUNT
+    int "NTP retry count"
+    default 10
+    help
+        Number of times to retry NTP server request if it fails. Default is 10 retries.
+endmenu
+
+    menu "MQTT"
+        config MQTT_INSECURE
+            bool "Skip MQTT broker certificate CN verification"
+            default n
+            help
+                Skip the Common Name (CN) check of the MQTT broker TLS certificate. Useful when the broker certificate CN doesn't match the broker hostname (e.g. self-signed certificates or IP-based connections). This is not recommended for production use as it may expose the device to man-in-the-middle attacks. Use only for testing purposes.
+    endmenu
+
+    menu "Telemetry"
+        config ENABLE_TELEMETRY
+            bool "Enable telemetry server"
+            default y
+            help
+                Enable telemetry server feature. If enabled, the device will start a telemetry HTTP server that read device logs 
+        config TELEMETRY_PORT
+            int "Telemetry server port"
+            default 3000
+            depends on ENABLE_TELEMETRY
+            help
+                TCP port of the telemetry HTTP server.
+    endmenu
+
+    menu "OTA Update"
+        config ENABLE_AUTO_OTA_UPDATE
+            bool "Enable automatic OTA update"
+            default y
+            help
+                Enable automatic OTA update feature. If enabled, the device will check for firmware updates from the specified URL and download and install them if available.
+
+        config OTA_UPDATE_CHECK_INTERVAL
+            int "OTA update check interval (seconds)"
+            default 21600
+            help
+                Interval in seconds between checking for OTA updates. Default is 21600 seconds (6 hours).
+
+        config OTA_UPDATE_URL
+            string "OTA update URL"
+            default "https://raw.githubusercontent.com/agromate-devs/OTA/refs/heads/main/"
+            help
+                URL to download the OTA update firmware binary.
+
+        config UNSAFE_OTA_UPDATE
+            bool "Allow unsafe OTA update"
+            default n
+            help
+                Allow OTA update on HTTP (non-secure) connection. Don't use this if your OTA server is HTTPS otherwise the update is going to fail. This is not recommended for production use as it may expose the device to security risks. Use only for testing purposes.
+    endmenu
+endmenu

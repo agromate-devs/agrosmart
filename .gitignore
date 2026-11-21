@@ -1,0 +1,8 @@
+.cache/
+.idea/
+.vscode/
+build/
+managed_components/
+# Standard release build (.github/workflows/release.yml)
+build-release/
+release/

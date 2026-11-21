@@ -1,0 +1,62 @@
+name: Release standard firmware
+
+# Builds the "standard" firmware from sdkconfig.defaults (every Agrosmart option
+# at its Kconfig default) and publishes it as a GitHub release.
+# Keep sdkconfig.defaults up to date when new options are added (idf.py
+# save-defconfig on a build with the standard configuration).
+# The Agromate website web flasher downloads the assets of the latest release.
+#
+# Release: git tag v1.2.3 && git push origin v1.2.3
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re)build and release, e.g. v1.2.3'
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  ESP_IDF_VERSION: v6.1
+  TARGET: esp32c5
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  release:
+    name: Build and publish ${{ inputs.tag || github.ref_name }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+          submodules: recursive
+
+      - name: Build firmware
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ env.ESP_IDF_VERSION }}
+          target: ${{ env.TARGET }}
+          command: >-
+            idf.py -B build-release
+            -D SDKCONFIG=build-release/sdkconfig
+            -D SDKCONFIG_DEFAULTS=sdkconfig.defaults
+            build
+
+      - name: Package release assets
+        run: python3 tools/package_release.py build-release release "$TAG"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release/* --clobber
+          else
+            gh release create "$TAG" release/* --title "Agrosmart $TAG" --notes-file .github/release-notes.md --verify-tag
+          fi
+
